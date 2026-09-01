@@ -19,13 +19,30 @@ Run both commands from inside `web-dashboard/`.
 
 | Path | Contents |
 |---|---|
+| `.streamlit/config.toml` | Pinned light theme and the palette every page reads |
 | `Home.py` | Entry page, project status, dataset of record |
 | `pages/` | One file per screen, Streamlit orders them by the numeric prefix |
 | `lib/config.py` | Paths, application constants, contract readers |
 | `lib/data.py` | `load_dataset()` and the dummy generator |
 | `lib/predictor.py` | `Prediction`, `DummyPredictor`, `load_predictor()` |
-| `lib/ui.py` | Page header, data source badge, disclaimer |
-| `tests/` | Contract tests: dummy data must obey `schema.yaml` |
+| `lib/ui.py` | Page header, light mode rules, data source badge, disclaimer |
+| `tests/` | Contract tests: dummy data must obey `schema.yaml`, theme must stay light |
+
+## Theme
+
+The app is pinned to light. `.streamlit/config.toml` holds the palette, so the screens no
+longer follow the operating system and a machine set to dark renders exactly what a machine
+set to light renders. Streamlit leaves the CSS `color-scheme` unset, which lets the browser
+carry on painting scrollbars and native controls dark on an otherwise light page, so
+`page()` injects the two rules that close that gap and reads their colours from the same
+config rather than keeping a second copy.
+
+`tests/test_theme.py` guards both halves: the config has to stay light, and every screen has
+to go through `page()`, which is what puts the rules on the page.
+
+One case the server cannot reach. A browser where someone picked Dark by hand keeps that
+choice in local storage and it wins over the config. Undo it in the three dot menu, under
+Settings, Appearance.
 
 ## How it stays honest without real data
 
