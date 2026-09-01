@@ -35,3 +35,15 @@ def feature_names():
 
 def target_name():
     return schema()["target"]["name"]
+
+
+def features_of_type(*kinds):
+    return [name for name, field in schema()["features"].items() if field["type"] in kinds]
+
+
+def numeric_features():
+    return features_of_type("int", "float")
+
+
+def categorical_features():
+    return features_of_type("categorical")

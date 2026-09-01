@@ -27,6 +27,13 @@ def page(title, subtitle=None):
         st.caption(subtitle)
 
 
+def figure(title, chart, note=None, container_width=True):
+    st.markdown(f"**{title}**")
+    st.altair_chart(chart, use_container_width=container_width)
+    if note:
+        st.caption(note)
+
+
 def source_badge(source):
     if source == "processed":
         st.success("Data source: frozen milestone dataset")
