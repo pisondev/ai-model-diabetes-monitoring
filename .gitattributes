@@ -1,0 +1,11 @@
+* text=auto eol=lf
+
+*.png binary
+*.jpg binary
+*.pdf binary
+*.csv binary
+*.parquet binary
+
+# Notebook outputs are stripped on commit. Every member runs "nbstripout --install"
+# once after cloning; without it git ignores this filter silently and diffs get noisy.
+*.ipynb filter=nbstripout

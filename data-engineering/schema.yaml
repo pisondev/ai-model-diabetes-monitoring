@@ -1,0 +1,58 @@
+# Feature contract between the data, modeling and dashboard sides of the project.
+# Owner: Axelle. The application and its dummy data are generated from this file,
+# so a field added here appears in the UI without any UI change.
+# Values below describe the active dataset and are provisional until profiling confirms them.
+
+version: 0
+dataset: kaggle_diabetes_prediction
+
+features:
+  gender:
+    type: categorical
+    values: [Female, Male, Other]
+    definition: reported gender of the patient
+  age:
+    type: float
+    min: 0.08
+    max: 80.0
+    decimals: 2
+    unit: years
+    definition: age at the time the record was captured
+  hypertension:
+    type: binary
+    positive_rate: 0.08
+    definition: prior diagnosis of hypertension
+  heart_disease:
+    type: binary
+    positive_rate: 0.04
+    definition: prior diagnosis of heart disease
+  smoking_history:
+    type: categorical
+    values: [never, No Info, current, former, ever, not current]
+    definition: reported smoking history, No Info is missingness recorded as a category
+  bmi:
+    type: float
+    min: 10.0
+    max: 96.0
+    decimals: 2
+    unit: kg/m2
+    definition: body mass index
+  HbA1c_level:
+    type: float
+    min: 3.5
+    max: 9.0
+    decimals: 1
+    unit: percent
+    definition: average blood glucose over roughly three months
+  blood_glucose_level:
+    type: int
+    min: 80
+    max: 300
+    unit: mg/dL
+    definition: blood glucose measurement at capture time
+
+target:
+  name: diabetes
+  type: binary
+  positive_rate: 0.085
+  definition: 1 when the record is labelled diabetic

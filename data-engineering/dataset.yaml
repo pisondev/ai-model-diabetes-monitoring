@@ -1,0 +1,32 @@
+# Single source of truth for which dataset the project runs on.
+# Owner: Axelle. Changing "active" is a contract change, see CONTRIBUTING.md.
+
+active: kaggle_diabetes_prediction
+
+candidates:
+  kaggle_diabetes_prediction:
+    name: Diabetes Prediction Dataset
+    url: https://www.kaggle.com/datasets/iammustafatz/diabetes-prediction-dataset
+    raw_file: diabetes_prediction_dataset.csv
+    unit_of_observation: one patient record
+    rows_expected: 100000
+    license: refer to the dataset page, academic use
+  pima_indians_unprocessed:
+    name: Pima Indians Diabetes Dataset, unprocessed
+    url: https://github.com/npradaschnor/Pima-Indians-Diabetes-Dataset
+    raw_file: diabetes.csv
+    unit_of_observation: one female patient of Pima heritage, aged 21 or older
+    rows_expected: 768
+    license: refer to the source repository, academic use
+
+acquisition:
+  date: TBD
+  captured_by: TBD
+  raw_sha256: TBD
+  raw_path: data-engineering/raw/v1/
+
+milestone_2:
+  processed_file: dataset_m2_v1.csv
+  frozen_on: TBD
+  cleaning_log: data-engineering/reports/cleaning-log.md
+  acquisition_log: data-engineering/reports/acquisition-log.md
