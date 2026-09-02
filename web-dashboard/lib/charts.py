@@ -97,7 +97,7 @@ def category_donut(frame, column, max_slices=3):
         color=alt.Color(
             f"{column}:N",
             scale=alt.Scale(domain=slices, range=colours),
-            legend=alt.Legend(title=None, orient="right"),
+            legend=alt.Legend(title=None, orient="bottom"),
         ),
         tooltip=[
             alt.Tooltip(f"{column}:N", title=column),
@@ -105,11 +105,11 @@ def category_donut(frame, column, max_slices=3):
             alt.Tooltip("share:Q", title="share", format=".1%"),
         ],
     )
-    ring = base.mark_arc(innerRadius=58, outerRadius=104, padAngle=0.012, stroke=palette.SURFACE, strokeWidth=2)
-    labels = base.mark_text(radius=124, fontSize=11, color=palette.INK_SECONDARY).encode(
+    ring = base.mark_arc(innerRadius=46, outerRadius=84, padAngle=0.012, stroke=palette.SURFACE, strokeWidth=2)
+    labels = base.mark_text(radius=100, fontSize=11, color=palette.INK_SECONDARY).encode(
         text=alt.Text("share:Q", format=".0%")
     )
-    return _styled(alt.layer(ring, labels))
+    return _styled(alt.layer(ring, labels), height=270)
 
 
 def histogram(frame, column, bins=28):
@@ -119,7 +119,7 @@ def histogram(frame, column, bins=28):
         alt.Chart(data)
         .mark_bar(cornerRadiusEnd=3, color=palette.ACCENT, stroke=palette.SURFACE, strokeWidth=1)
         .encode(
-            x=alt.X("start:Q", title=column, scale=alt.Scale(nice=False), axis=alt.Axis(grid=False, tickCount=8)),
+            x=alt.X("start:Q", title=column, scale=alt.Scale(nice=False, zero=False), axis=alt.Axis(grid=False, tickCount=8)),
             x2="end:Q",
             y=alt.Y("records:Q", title="records"),
             y2=alt.datum(0),
@@ -430,7 +430,8 @@ def record_vs_cohort_dumbbell(record, frame, fields):
             alt.Tooltip("value:Q", title="value", format=".2f"),
         ],
     )
-    return _styled(alt.layer(connector, dots), height=240)
+    # one row per field, or vega starts dropping every other axis label
+    return _styled(alt.layer(connector, dots), height=max(240, 34 * len(order)))
 
 
 def majority_baseline_bar(positive_rate):
@@ -496,3 +497,101 @@ def accuracy_vs_prevalence_line(positive_rate, limit=0.5, points=101):
         .encode(x="prevalence:Q", y="accuracy:Q", text=alt.Text("accuracy:Q", format=".1%"))
     )
     return _styled(alt.layer(curve, rule, dot, label))
+
+
+def _ordinal_levels(frame, column):
+    """Sorted levels, with anything past the ramp folded into a top level rather than recoloured."""
+    levels = sorted(frame[column].dropna().unique())
+    if len(levels) <= len(palette.ORDINAL):
+        return [str(level) for level in levels], frame[column].astype(str)
+    keep = levels[: len(palette.ORDINAL) - 1]
+    top = f"{keep[-1]} or more"
+    labels = frame[column].apply(lambda value: str(value) if value in keep else top)
+    return [str(level) for level in keep] + [top], labels
+
+
+def ordinal_donut(frame, column):
+    order, labels = _ordinal_levels(frame, column)
+    counts = labels.value_counts().rename_axis("level").reset_index(name="patients")
+    counts = counts.set_index("level").reindex(order).reset_index()
+    counts["share"] = counts["patients"] / counts["patients"].sum()
+    base = alt.Chart(counts).encode(
+        theta=alt.Theta("patients:Q", stack=True),
+        order=alt.Order("level:N", sort="ascending"),
+        color=alt.Color(
+            "level:N",
+            sort=order,
+            scale=alt.Scale(domain=order, range=list(palette.ORDINAL[: len(order)])),
+            legend=alt.Legend(title=None, orient="bottom"),
+        ),
+        tooltip=[
+            alt.Tooltip("level:N", title="level"),
+            alt.Tooltip("patients:Q", title="patients", format=","),
+            alt.Tooltip("share:Q", title="share", format=".1%"),
+        ],
+    )
+    ring = base.mark_arc(innerRadius=46, outerRadius=84, padAngle=0.012, stroke=palette.SURFACE, strokeWidth=2)
+    labels = base.mark_text(radius=100, fontSize=11, color=palette.INK_SECONDARY).encode(
+        text=alt.Text("share:Q", format=".0%")
+    )
+    return _styled(alt.layer(ring, labels), height=270)
+
+
+def positive_rate_by_level(frame, column, target, order=None):
+    order, labels = (order, frame[column].astype(str)) if order else _ordinal_levels(frame, column)
+    grouped = frame.assign(level=labels).groupby("level", observed=True)[target].agg(["mean", "size"]).reset_index()
+    grouped.columns = ["level", "positive_rate", "patients"]
+    grouped = grouped.set_index("level").reindex(order).reset_index()
+    base = alt.Chart(grouped).encode(
+        x=alt.X("level:N", sort=order, title=column.replace("_", " "), axis=alt.Axis(labelAngle=0)),
+        # pinned so two of these side by side stay comparable at a glance
+        y=alt.Y(
+            "positive_rate:Q",
+            title="diabetic share",
+            scale=alt.Scale(domain=[0, 1]),
+            axis=alt.Axis(format="%", tickCount=5),
+        ),
+        tooltip=[
+            alt.Tooltip("level:N", title="level"),
+            alt.Tooltip("positive_rate:Q", title="diabetic share", format=".1%"),
+            alt.Tooltip("patients:Q", title="patients", format=","),
+        ],
+    )
+    bars = base.mark_bar(cornerRadiusEnd=3, stroke=palette.SURFACE, strokeWidth=1).encode(
+        color=alt.Color(
+            "level:N",
+            sort=order,
+            scale=alt.Scale(domain=order, range=list(palette.ORDINAL[: len(order)])),
+            legend=None,
+        )
+    )
+    labels_layer = base.mark_text(dy=-8, fontSize=11, color=palette.INK_SECONDARY).encode(
+        text=alt.Text("positive_rate:Q", format=".0%")
+    )
+    return _styled(alt.layer(bars, labels_layer))
+
+
+def prevalence_line(frame, column, target, bands=6):
+    cut = pd.qcut(frame[column], bands, duplicates="drop")
+    grouped = frame.groupby(cut, observed=True).agg(
+        centre=(column, "mean"), positive_rate=(target, "mean"), patients=(target, "size")
+    )
+    data = grouped.reset_index(drop=True)
+    base = alt.Chart(data).encode(
+        x=alt.X("centre:Q", title=f"{column}, band centre", scale=alt.Scale(nice=False), axis=alt.Axis(grid=False)),
+        y=alt.Y("positive_rate:Q", title="diabetic share", scale=alt.Scale(domain=[0, 1]), axis=alt.Axis(format="%", tickCount=5)),
+        tooltip=[
+            alt.Tooltip("centre:Q", title="band centre", format=".1f"),
+            alt.Tooltip("positive_rate:Q", title="diabetic share", format=".1%"),
+            alt.Tooltip("patients:Q", title="patients", format=","),
+        ],
+    )
+    band = base.mark_area(color=palette.ACCENT, opacity=0.12)
+    line = base.mark_line(color=palette.ACCENT, strokeWidth=2)
+    dots = base.mark_point(filled=True, size=70, color=palette.ACCENT, stroke=palette.SURFACE, strokeWidth=2)
+    overall = (
+        alt.Chart(pd.DataFrame({"overall": [frame[target].mean()]}))
+        .mark_rule(color=palette.INK, strokeWidth=1.5)
+        .encode(y="overall:Q", tooltip=alt.Tooltip("overall:Q", title="cohort share", format=".1%"))
+    )
+    return _styled(alt.layer(band, line, dots, overall))

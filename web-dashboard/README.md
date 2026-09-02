@@ -20,10 +20,10 @@ Run both commands from inside `web-dashboard/`.
 | Path | Contents |
 |---|---|
 | `.streamlit/config.toml` | Pinned light theme and the palette every page reads |
-| `Home.py` | Entry page, project status, dataset of record |
+| `Home.py` | Screening overview: headline numbers, four panels, links into the rest |
 | `pages/` | One file per screen, Streamlit orders them by the numeric prefix |
-| `lib/config.py` | Paths, application constants, contract readers |
-| `lib/data.py` | `load_dataset()` and the dummy generator |
+| `lib/config.py` | Paths, application constants, contract readers, clinical field roles |
+| `lib/data.py` | `load_dataset()`, cohort helpers, the dummy generator |
 | `lib/predictor.py` | `Prediction`, `DummyPredictor`, `load_predictor()` |
 | `lib/palette.py` | Chart colours, one validated set for the whole application |
 | `lib/charts.py` | Every chart, one function each, pandas in and Altair out |
@@ -45,6 +45,31 @@ to go through `page()`, which is what puts the rules on the page.
 One case the server cannot reach. A browser where someone picked Dark by hand keeps that
 choice in local storage and it wins over the config. Undo it in the three dot menu, under
 Settings, Appearance.
+
+## Which cohort the app reads
+
+Three sources, in this order, and the badge at the top of every page says which one it got:
+
+| Source | File | What it enables |
+|---|---|---|
+| `engineered` | `processed/dataset_m2_v1_engineered.csv` | Everything, including the panels built on the derived clinical bands |
+| `processed` | the file `dataset.yaml` names under `milestone_2.processed_file` | The contract fields only; band panels replace themselves with a note |
+| `dummy` | none | Rows generated from `schema.yaml`, so the screens still render before any dataset exists |
+
+The engineered file is not named in `dataset.yaml` yet, so `engineered_path()` falls back to
+the `_engineered` sibling of the declared file. That is a convention, not a contract, and it
+should become one: the data side adding `milestone_2.engineered_file` turns the guess into a
+declaration. Until then the app degrades to the declared file rather than failing.
+
+## Column names are not written into the screens
+
+The project switched dataset once already, from a Kaggle set with categorical fields to the
+Pima cohort with eight numeric ones, and every page that named a column literally broke.
+The screens now ask `lib/config.py` for a **role** instead: `role("primary")` is the measure
+the diagnosis is defined against, `role("age")` the one the bands are cut on. A role resolves
+to the field named in `ROLES` when the contract has it and to a positional stand-in when it
+does not, so the next contract change costs a line in one file rather than a sweep through
+five screens.
 
 ## Charts
 
@@ -72,11 +97,14 @@ on.
 
 | Page | Charts |
 |---|---|
-| Home | Class balance bar, gender donut, smoking history bar with the No Info level highlighted |
-| Dataset Overview | Age and BMI histograms, HbA1c against blood glucose scattered by label, positive rate by age band |
-| Data Quality | Completeness bar, boxplot small multiples, correlation heatmap, positive rate by gender and by smoking history |
-| Risk Screening | Score meter against the threshold, cumulative HbA1c curve marking the entered record, dumbbell of the record against the cohort median |
-| Model Performance | The always-negative rule scored on the loaded dataset, accuracy against prevalence |
+| Home | Prevalence line by age band, body-mass donut, risk score donut, highest risk patients |
+| Patient Cohort | Glucose and BMI histograms, glucose against insulin scattered by diagnosis, diabetic share by age band |
+| Data Quality | Completeness bar, boxplot small multiples, correlation heatmap, diabetic share by body-mass and glucose band |
+| Risk Screening | Score meter against the threshold, cumulative glucose curve marking the entered patient, dumbbell of the patient against the cohort median |
+| Model Performance | The always-negative rule scored on the cohort, accuracy against prevalence, diabetic share per level of the derived risk score |
+
+Every chart that reports a diabetic share is pinned to a nought-to-one axis, so two of them
+side by side can be compared without reading the ticks.
 
 ## How it stays honest without real data
 
@@ -94,10 +122,10 @@ changes.
 
 | Page | Reads now | Reads later |
 |---|---|---|
-| Dataset Overview | Dummy frame, field contract | Frozen dataset |
-| Data Quality | Duplicate and missing counts, spread and class balance of the dummy frame | The same charts on the real dataset |
+| Patient Cohort | The frozen cohort and the field contract | Unchanged |
+| Data Quality | Completeness, spread and band splits of the frozen cohort | Unchanged |
 | Risk Screening | Form generated from the schema, placeholder score | Trained model |
-| Model Performance | The majority-class floor computed from the loaded dataset | Metrics published by the modeling side |
+| Model Performance | The majority-class floor and the derived score's own lift | Metrics published by the modeling side |
 
 The Model Performance page has no fabricated numbers on it. Until an experiment is
 published it scores the always-negative rule against whichever dataset is loaded, which is

@@ -34,11 +34,28 @@ def figure(title, chart, note=None, container_width=True):
         st.caption(note)
 
 
+SOURCE_NOTES = {
+    "engineered": "Cohort: frozen milestone dataset with the derived clinical bands",
+    "processed": "Cohort: frozen milestone dataset, derived bands not present",
+    "dummy": "Cohort: generated dummy data, no real patient is shown",
+}
+
+
+def module_card(title, note, target_page):
+    with st.container(border=True):
+        st.markdown(f"**{title}**")
+        st.caption(note)
+        st.page_link(target_page, label="Open")
+
+
 def source_badge(source):
-    if source == "processed":
-        st.success("Data source: frozen milestone dataset")
+    note = SOURCE_NOTES[source]
+    if source == "engineered":
+        st.success(note)
+    elif source == "processed":
+        st.info(note)
     else:
-        st.warning("Data source: generated dummy data, no real record is shown")
+        st.warning(note)
 
 
 def disclaimer():
