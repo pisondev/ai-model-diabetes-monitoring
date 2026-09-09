@@ -1,58 +1,69 @@
 # Feature contract between the data, modeling and dashboard sides of the project.
 # Owner: Axelle. The application and its dummy data are generated from this file,
 # so a field added here appears in the UI without any UI change.
-# Values below describe the active dataset and are provisional until profiling confirms them.
+# Values below describe the active dataset (Pima Indians Diabetes Dataset).
 
-version: 0
-dataset: kaggle_diabetes_prediction
+version: 1
+dataset: pima_indians_unprocessed
 
 features:
-  gender:
-    type: categorical
-    values: [Female, Male, Other]
-    definition: reported gender of the patient
-  age:
-    type: float
-    min: 0.08
-    max: 80.0
-    decimals: 2
-    unit: years
-    definition: age at the time the record was captured
-  hypertension:
-    type: binary
-    positive_rate: 0.08
-    definition: prior diagnosis of hypertension
-  heart_disease:
-    type: binary
-    positive_rate: 0.04
-    definition: prior diagnosis of heart disease
-  smoking_history:
-    type: categorical
-    values: [never, No Info, current, former, ever, not current]
-    definition: reported smoking history, No Info is missingness recorded as a category
-  bmi:
-    type: float
-    min: 10.0
-    max: 96.0
-    decimals: 2
-    unit: kg/m2
-    definition: body mass index
-  HbA1c_level:
-    type: float
-    min: 3.5
-    max: 9.0
-    decimals: 1
-    unit: percent
-    definition: average blood glucose over roughly three months
-  blood_glucose_level:
+  Pregnancies:
     type: int
-    min: 80
-    max: 300
+    min: 0
+    max: 17
+    unit: count
+    definition: Number of times pregnant
+  Glucose:
+    type: float
+    min: 44.0
+    max: 200.0
+    decimals: 1
     unit: mg/dL
-    definition: blood glucose measurement at capture time
+    definition: 2-hour plasma glucose concentration post-OGTT
+  BloodPressure:
+    type: float
+    min: 24.0
+    max: 122.0
+    decimals: 1
+    unit: mm Hg
+    definition: Diastolic blood pressure
+  SkinThickness:
+    type: float
+    min: 7.0
+    max: 99.0
+    decimals: 1
+    unit: mm
+    definition: Triceps skin fold thickness
+  Insulin:
+    type: float
+    min: 14.0
+    max: 846.0
+    decimals: 1
+    unit: mu U/ml
+    definition: 2-Hour serum insulin
+  BMI:
+    type: float
+    min: 18.0
+    max: 67.1
+    decimals: 1
+    unit: kg/m2
+    definition: Body mass index (weight in kg/(height in m)^2)
+  DiabetesPedigreeFunction:
+    type: float
+    min: 0.07
+    max: 2.42
+    decimals: 3
+    unit: score
+    definition: Diabetes pedigree function (genetic risk score)
+  Age:
+    type: int
+    min: 21
+    max: 81
+    unit: years
+    definition: Age in years
 
 target:
-  name: diabetes
+  name: Outcome
   type: binary
-  positive_rate: 0.085
-  definition: 1 when the record is labelled diabetic
+  positive_rate: 0.349
+  definition: 1 when the patient is diagnosed with diabetes, 0 otherwise

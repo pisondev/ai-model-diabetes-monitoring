@@ -1,7 +1,7 @@
 # Single source of truth for which dataset the project runs on.
 # Owner: Axelle. Changing "active" is a contract change, see CONTRIBUTING.md.
 
-active: kaggle_diabetes_prediction
+active: pima_indians_unprocessed
 
 candidates:
   kaggle_diabetes_prediction:
@@ -20,13 +20,13 @@ candidates:
     license: refer to the source repository, academic use
 
 acquisition:
-  date: TBD
-  captured_by: TBD
-  raw_sha256: TBD
-  raw_path: data-engineering/raw/v1/
+  date: "2026-08-30"
+  captured_by: Axelle Chandra
+  raw_sha256: b78029447fae2743b3218bb2b76ef0d04afe8d7e55ce2faf4d1ec82d8f8ae8ac
+  raw_path: data-engineering/raw/diabetes.csv
 
 milestone_2:
   processed_file: dataset_m2_v1.csv
-  frozen_on: TBD
+  frozen_on: "2026-08-30"
   cleaning_log: data-engineering/reports/cleaning-log.md
   acquisition_log: data-engineering/reports/acquisition-log.md
