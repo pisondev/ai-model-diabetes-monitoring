@@ -5,6 +5,9 @@ import yaml
 REPO_ROOT = Path(__file__).resolve().parents[2]
 DATA_ROOT = REPO_ROOT / "data-engineering"
 PROCESSED_DIR = DATA_ROOT / "processed"
+MODELS_DIR = REPO_ROOT / "modeling" / "models"
+MODEL_FILE = MODELS_DIR / "screening_model.joblib"
+METRICS_FILE = MODELS_DIR / "metrics.json"
 
 APP_TITLE = "Diabetes Risk Screening"
 APP_SUBTITLE = "Screening overview for the frozen Pima cohort"

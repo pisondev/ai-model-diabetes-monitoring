@@ -46,3 +46,49 @@ def test_imputation_spikes_flag_a_value_that_carries_the_label():
     hits = imputation_spikes(planted, target)
     assert any(row["field"] == column and row["value"] == 999.0 for row in hits)
     assert not imputation_spikes(frame.assign(**{target: 1}), target)
+
+
+def test_the_trained_artifact_is_used_when_it_exists():
+    from lib.config import MODEL_FILE
+    from lib.predictor import DummyPredictor, load_predictor
+
+    predictor = load_predictor()
+    if MODEL_FILE.exists():
+        assert predictor.source == "trained"
+        assert 0.0 < predictor.threshold < 1.0
+        assert predictor.features == feature_names()
+    else:
+        assert isinstance(predictor, DummyPredictor)
+
+
+def test_a_trained_predictor_returns_a_probability_and_a_label_that_agree():
+    from lib.config import MODEL_FILE, schema
+    from lib.predictor import load_predictor
+
+    if not MODEL_FILE.exists():
+        return
+    predictor = load_predictor()
+    fields = schema()["features"]
+    record = {name: float(field["min"]) for name, field in fields.items()}
+    result = predictor.predict(record)
+    assert 0.0 <= result.probability <= 1.0
+    assert result.label == int(result.probability >= predictor.threshold)
+
+
+def test_every_demo_preset_sits_inside_the_contract():
+    import ast
+    from pathlib import Path
+
+    from lib.config import schema
+
+    source = Path(__file__).resolve().parents[1] / "pages" / "3_Risk_Screening.py"
+    tree = ast.parse(source.read_text(encoding="utf-8"))
+    presets = next(node.value for node in ast.walk(tree)
+                   if isinstance(node, ast.Assign)
+                   and any(getattr(t, "id", "") == "EXAMPLES" for t in node.targets))
+    fields = schema()["features"]
+    for key, value in zip(presets.keys, presets.values):
+        record = ast.literal_eval(value)
+        assert set(record) == set(fields), key.value
+        for name, reading in record.items():
+            assert fields[name]["min"] <= reading <= fields[name]["max"], (key.value, name, reading)
