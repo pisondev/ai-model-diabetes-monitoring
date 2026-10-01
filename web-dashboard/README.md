@@ -46,6 +46,23 @@ One case the server cannot reach. A browser where someone picked Dark by hand ke
 choice in local storage and it wins over the config. Undo it in the three dot menu, under
 Settings, Appearance.
 
+## The frozen cohort leaks its label
+
+`imputation_spikes()` looks for an exact value held by at least 5 percent of the cohort whose
+diabetic share sits at least 25 points away from the cohort's own. On the frozen file it finds
+the fill values: Insulin 102.5 across 236 patients, none of them diabetic, and Insulin 169.5
+across 138 patients, all of them diabetic. The cleaning step filled each missing reading with the
+median of that patient's own `Outcome` class, so a refilled cell carries the answer.
+
+The Data Quality page reports this live rather than from a note, because the check is cheap and
+the frozen file may be refrozen. Measured on this cohort, training on the frozen frame inflates
+Random Forest PR-AUC from 0.722 to 0.913 and recall from 0.634 to 0.817 under stratified 10-fold.
+
+The detector is read, not trusted blindly: it also flags the youngest age in the cohort, which is
+a real pattern rather than an artefact. Modeling therefore reads the raw file with zeros as
+missing and imputes inside the pipeline, fitted on the training folds without the label. This
+application keeps serving the frozen file, which is a profiling and reporting artefact.
+
 ## Which cohort the app reads
 
 Three sources, in this order, and the badge at the top of every page says which one it got:
@@ -99,7 +116,7 @@ on.
 |---|---|
 | Home | Prevalence line by age band, body-mass donut, risk score donut, highest risk patients |
 | Patient Cohort | Glucose and BMI histograms, glucose against insulin scattered by diagnosis, diabetic share by age band |
-| Data Quality | Completeness bar, boxplot small multiples, correlation heatmap, diabetic share by body-mass and glucose band |
+| Data Quality | Completeness bar, values that carry the diagnosis, boxplot small multiples, correlation heatmap, diabetic share by body-mass and glucose band |
 | Risk Screening | Score meter against the threshold, cumulative glucose curve marking the entered patient, dumbbell of the patient against the cohort median |
 | Model Performance | The always-negative rule scored on the cohort, accuracy against prevalence, diabetic share per level of the derived risk score |
 

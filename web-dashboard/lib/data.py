@@ -1,7 +1,15 @@
 import numpy as np
 import pandas as pd
 
-from .config import DERIVED, DUMMY_ROWS, DUMMY_SEED, PROCESSED_DIR, dataset_config, schema
+from .config import (
+    DERIVED,
+    DUMMY_ROWS,
+    DUMMY_SEED,
+    PROCESSED_DIR,
+    dataset_config,
+    numeric_features,
+    schema,
+)
 
 
 def processed_path():
@@ -69,3 +77,24 @@ def top_risk_patients(frame, target, limit=6):
         ranking = [target]
     ordered = frame.sort_values(ranking, ascending=False).head(limit)
     return ordered.assign(patient=[f"#P-{index:03d}" for index in ordered.index])
+
+
+def imputation_spikes(frame, target, min_share=0.05, min_gap=0.25):
+    """Exact values repeated so often, and so tied to one diagnosis, that they look imputed.
+
+    A fill value computed per outcome class leaves a pile of identical readings whose
+    diagnosis share sits far from the cohort's. That is label information inside a feature,
+    so any model trained on the column learns it.
+    """
+    cohort_rate = frame[target].mean()
+    spikes = []
+    for column in numeric_features():
+        if column not in frame.columns:
+            continue
+        for value, count in frame[column].value_counts().items():
+            share = count / len(frame)
+            rate = frame.loc[frame[column] == value, target].mean()
+            if share >= min_share and abs(rate - cohort_rate) >= min_gap:
+                spikes.append({"field": column, "value": float(value), "patients": int(count),
+                               "share": float(share), "positive_rate": float(rate)})
+    return sorted(spikes, key=lambda row: -row["patients"])

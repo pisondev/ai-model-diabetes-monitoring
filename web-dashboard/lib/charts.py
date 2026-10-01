@@ -198,7 +198,8 @@ def completeness_bar(frame):
     labels = base.mark_text(align="right", dx=-6, fontSize=10, color=palette.SURFACE).encode(
         text=alt.Text("complete:Q", format=".1%")
     )
-    return _styled(alt.layer(bars, labels), height=280)
+    # one row per field, or the labels pile up once the derived columns arrive
+    return _styled(alt.layer(bars, labels), height=max(220, 26 * len(data)))
 
 
 def _box_stats(values):

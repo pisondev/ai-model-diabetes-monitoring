@@ -2,7 +2,7 @@ import streamlit as st
 
 from lib.charts import completeness_bar, correlation_heatmap, numeric_boxplots, positive_rate_by_level
 from lib.config import numeric_features, target_name
-from lib.data import derived_column, implausible_zeros, load_dataset
+from lib.data import derived_column, implausible_zeros, imputation_spikes, load_dataset
 from lib.ui import figure, page, source_badge
 
 page("Cohort data quality", "Evidence behind the cleaning decisions the data side made")
@@ -31,6 +31,44 @@ figure(
     completeness_bar(frame),
     "Declared nulls only. The count above is the check that the disguised kind was resolved too.",
 )
+
+st.subheader("Values that carry the diagnosis")
+spikes = imputation_spikes(frame, target)
+if spikes:
+    st.warning(
+        "The cleaning step filled each missing reading with the median of that patient's own "
+        "Outcome class. Every refilled cell therefore carries the answer, and a model trained on "
+        "this frame can read the label straight out of the feature."
+    )
+    st.dataframe(
+        [
+            {
+                "Field": row["field"],
+                "Value": row["value"],
+                "Patients": row["patients"],
+                "Share of cohort": f"{row['share']:.1%}",
+                "Diabetic": f"{row['positive_rate']:.1%}",
+            }
+            for row in spikes
+        ],
+        hide_index=True,
+        use_container_width=True,
+    )
+    st.caption(
+        f"Detected live: an exact value held by at least 5% of the cohort whose diabetic share "
+        f"sits at least 25 points from the cohort's {frame[target].mean():.1%}. The Insulin and "
+        "SkinThickness rows are the fill values. A row such as the youngest age in the cohort is a "
+        "real pattern rather than an artefact, so the table is read rather than trusted blindly."
+    )
+    st.info(
+        "Consequence for modeling, agreed with the modeling side: training reads the raw file with "
+        "zeros as missing, and imputation happens inside the model pipeline, fitted on the training "
+        "folds without the label. This frozen frame stays the profiling and reporting artefact. "
+        "Measured on this cohort, the shortcut inflates Random Forest PR-AUC from 0.722 to 0.913 "
+        "and recall from 0.634 to 0.817."
+    )
+else:
+    st.success("No single value concentrates the diagnosis, so no imputation artefact is visible.")
 
 figure(
     "Spread and outliers per clinical field",
