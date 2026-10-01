@@ -273,3 +273,11 @@ def test_every_share_chart_reads_against_the_same_pinned_axis():
             if "scale" in layer.get("encoding", {}).get("y", {})
         ]
         assert domains and all(domain == [0, 1] for domain in domains)
+
+
+def test_the_completeness_bar_grows_with_the_number_of_fields():
+    wide = FRAME.assign(**{f"extra_{i}": 1.0 for i in range(8)})
+    tall = charts.completeness_bar(wide).to_dict()["height"]
+    assert tall >= 26 * wide.shape[1]
+    assert tall > charts.completeness_bar(FRAME).to_dict()["height"]
+

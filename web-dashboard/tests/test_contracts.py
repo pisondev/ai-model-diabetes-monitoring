@@ -31,3 +31,18 @@ def test_predictor_is_deterministic_for_one_record():
     record = {"age": 45, "bmi": 28.1, "HbA1c_level": 6.2}
     predictor = DummyPredictor()
     assert predictor.predict(record) == predictor.predict(record)
+
+
+def test_imputation_spikes_flag_a_value_that_carries_the_label():
+    from lib.config import numeric_features
+    from lib.data import imputation_spikes
+
+    frame = make_dummy_frame(rows=400)
+    target = target_name()
+    column = numeric_features()[0]
+    planted = frame.copy()
+    planted.loc[planted.index[:120], column] = 999.0
+    planted.loc[planted.index[:120], target] = 1
+    hits = imputation_spikes(planted, target)
+    assert any(row["field"] == column and row["value"] == 999.0 for row in hits)
+    assert not imputation_spikes(frame.assign(**{target: 1}), target)
