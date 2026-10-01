@@ -24,7 +24,7 @@ Run both commands from inside `web-dashboard/`.
 | `pages/` | One file per screen, Streamlit orders them by the numeric prefix |
 | `lib/config.py` | Paths, application constants, contract readers, clinical field roles |
 | `lib/data.py` | `load_dataset()`, cohort helpers, the dummy generator |
-| `lib/predictor.py` | `Prediction`, `DummyPredictor`, `load_predictor()` |
+| `lib/predictor.py` | `Prediction`, `TrainedPredictor`, `DummyPredictor`, `load_predictor()` |
 | `lib/palette.py` | Chart colours, one validated set for the whole application |
 | `lib/charts.py` | Every chart, one function each, pandas in and Altair out |
 | `lib/ui.py` | Page header, light mode rules, data source badge, disclaimer |
@@ -45,6 +45,18 @@ to go through `page()`, which is what puts the rules on the page.
 One case the server cannot reach. A browser where someone picked Dark by hand keeps that
 choice in local storage and it wins over the config. Undo it in the three dot menu, under
 Settings, Appearance.
+
+## Where the model comes from
+
+`load_predictor()` returns the artifact at `modeling/models/screening_model.joblib` when the
+modeling side has published one, and the placeholder otherwise. The Risk Screening page says
+which of the two it got, and Model Performance reads `modeling/models/metrics.json` rather than
+repeating any number by hand. Neither file is committed, so a fresh clone shows the placeholder
+until someone runs `python modeling/train.py`.
+
+The artifact carries its own decision threshold, currently 0.366, chosen on out-of-fold
+predictions to hold recall above 0.70. The screening page draws it on the meter rather than
+assuming 0.5.
 
 ## The frozen cohort leaks its label
 
